@@ -2,7 +2,7 @@
   "name": "pestiscan-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "PestiScan API — stores multispectral TIFF captures in Cloudinary and runs ONNX pesticide-residue inference.",
+  "description": "PestiScan API — stores TIFF captures in Cloudinary and classifies supported RGB apple images with ONNX.",
   "main": "src/server.js",
   "engines": {
     "node": ">=20.19.0"

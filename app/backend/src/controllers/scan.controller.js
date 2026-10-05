@@ -90,9 +90,8 @@ async function createScan(req, res) {
     sizeBytes: size,
     raster: analysis.raster,
     asset,
-    classification: analysis.classification,
+    appleClassification: analysis.appleClassification,
     quality: analysis.quality,
-    pesticide: analysis.pesticide,
     inference: analysis.inference,
     capturedAt: metadata.capturedAt ? new Date(metadata.capturedAt) : new Date(),
   });

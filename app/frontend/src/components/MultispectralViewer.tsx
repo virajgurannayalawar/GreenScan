@@ -19,7 +19,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import config from '../config/env';
 import { colors, radius, spacing, typography } from '../theme';
-import { buildFalseColorUniforms, getFalseColorEffect } from '../shaders/falseColor';
+import {
+  buildFalseColorUniforms,
+  getFalseColorEffect,
+  resolveDisplayMapping,
+} from '../shaders/falseColor';
 import { getPlaceholderTexture, type BandTextures } from '../services/skiaTexture';
 import { bandName } from '../utils/format';
 import type { BandMapping, BandStretch, RenderMode } from '../types';
@@ -77,18 +81,24 @@ export function MultispectralViewer({
     }
   }, []);
 
+  const displayMapping = useMemo(
+    () => resolveDisplayMapping(mapping, bandCount),
+    [mapping, bandCount],
+  );
+  const displayMode = bandCount === 3 ? 'false-color' : renderMode;
+
   const uniforms = useMemo(
     () =>
       buildFalseColorUniforms({
-        mapping,
+        mapping: displayMapping,
         stretches,
         bandCount,
         hasTextureB: textures.imageB !== null,
-        mode: renderMode,
+        mode: displayMode,
         gain,
         gamma,
       }),
-    [mapping, stretches, bandCount, textures.imageB, renderMode, gain, gamma],
+    [displayMapping, stretches, bandCount, textures.imageB, displayMode, gain, gamma],
   );
 
   const imageWidth = textures.width;
@@ -238,10 +248,16 @@ export function MultispectralViewer({
       </GestureDetector>
 
       <View style={styles.legend}>
-        <ChannelChip channel="R" color="#F87171" band={mapping.red} active={renderMode === 'false-color'} />
-        <ChannelChip channel="G" color="#4ADE80" band={mapping.green} active={renderMode === 'false-color'} />
-        <ChannelChip channel="B" color="#60A5FA" band={mapping.blue} active={renderMode === 'false-color'} />
-        {renderMode === 'ndvi' ? <Text style={styles.legendNote}>NDVI colour ramp</Text> : null}
+        {bandCount === 3 ? (
+          <Text style={styles.legendNote}>Original RGB channels · no false-colour remapping</Text>
+        ) : (
+          <>
+            <ChannelChip channel="R" color="#F87171" band={displayMapping.red} active={renderMode === 'false-color'} />
+            <ChannelChip channel="G" color="#4ADE80" band={displayMapping.green} active={renderMode === 'false-color'} />
+            <ChannelChip channel="B" color="#60A5FA" band={displayMapping.blue} active={renderMode === 'false-color'} />
+            {renderMode === 'ndvi' ? <Text style={styles.legendNote}>NDVI colour ramp</Text> : null}
+          </>
+        )}
       </View>
 
       <Text style={styles.hint}>Drag to pan · pinch to zoom · double-tap to reset</Text>

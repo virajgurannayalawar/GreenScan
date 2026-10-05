@@ -83,7 +83,7 @@ export type RenderMode = 'false-color' | 'ndvi';
 /* ----------------------------------------------------------------- backend */
 
 export type ScanStatus = 'ok' | 'rejected' | 'failed';
-export type RejectionReason = 'not_vegetable' | 'unclear_image' | null;
+export type RejectionReason = 'not_vegetable' | 'unclear_image' | 'unsupported_format' | null;
 export type ResidueLevel = 'none' | 'low' | 'moderate' | 'high' | 'severe';
 
 export interface ScanResult {
@@ -113,15 +113,14 @@ export interface ScanResult {
     label: string;
     confidence: number;
   };
+  appleClassification?: {
+    label: 'Fresh' | 'High' | 'Low';
+    confidence: number;
+  };
   quality?: {
     sharpness: number;
     isClear: boolean;
     saturatedRatio: number;
-  };
-  pesticide?: {
-    percent: number;
-    level: ResidueLevel;
-    confidence: number;
   };
   inference?: {
     engine: string;
@@ -140,12 +139,9 @@ export interface HistoryPage {
 
 export interface HistorySummary {
   total: number;
-  scored: number;
+  classified: number;
   rejected: number;
-  averagePercent: number | null;
-  maxPercent: number | null;
   lastScanAt: string | null;
-  byLevel: Partial<Record<ResidueLevel, number>>;
 }
 
 export interface Profile {

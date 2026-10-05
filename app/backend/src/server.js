@@ -11,7 +11,8 @@ let server = null;
 async function start() {
   await connectDatabase();
 
-  // Non-fatal: in stub mode the API is still useful without weights present.
+  // Keep the API available for diagnostics; scans fail explicitly if the
+  // required classifier could not be loaded.
   await onnxService.warmUp().catch((error) => {
     logger.error('onnx.warmup_failed', { message: error.message });
   });

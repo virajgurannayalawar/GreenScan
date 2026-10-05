@@ -1,9 +1,9 @@
 # PestiScan
 
-Multispectral pesticide-residue screening. A React Native app renders a
-multispectral `.tif` as a false-colour composite entirely on the GPU, while a
-Node/Express service archives the raw file to Cloudinary and scores it with two
-ONNX models.
+A React Native app renders multispectral `.tif` files as false-colour composites
+on the GPU. The backend archives uploads to Cloudinary and currently classifies
+supported 8-bit RGB TIFFs with the apple dataset ONNX model. Pesticide-residue
+estimation is temporarily disabled.
 
 ```
 PestiScan/
@@ -40,7 +40,7 @@ dependency set, `.env.example` declares the configuration surface.
             │                                │
   1. native streaming read          1. Cloudinary archive (raw)
   2. SkSL band remap on GPU         2. decode every band
-  3. Skia canvas + gestures         3. vegetable gate → residue model
+  3. Skia canvas + gestures         3. RGB apple dataset classifier
             │                                │
             └──────────┬─────────────────────┘
                        │
@@ -122,31 +122,26 @@ Cheap checks gate expensive ones:
 
 1. **Decode** all bands (`geotiff`, planar output).
 2. **Quality gate** — variance of the Laplacian plus a blown-out-pixel ratio.
-   Below threshold → `rejected / unclear_image`. A blurry photo of a brick never
-   reaches the regressor.
-3. **Vegetable gate** — `vegetable_gate.onnx` on the false-colour preview.
-   Below `VEGETABLE_CONFIDENCE_THRESHOLD` → `rejected / not_vegetable` with the
-   message *"This does not look like a vegetable…"*.
-4. **Residue regressor** — `pesticide_residue.onnx` over all bands → percentage,
-   bucketed into `none · low · moderate · high · severe`.
+   Below threshold → `rejected / unclear_image`.
+3. **Apple classifier** — `appleScanner_resnet18.onnx` on supported 8-bit RGB TIFFs.
+   It returns the dataset class `Fresh`, `High`, or `Low`.
+4. **Residue estimation is disabled.** The apple class is not a residue measurement.
+   Residue percentages are not returned.
 
 Cloudinary uses `resource_type: 'raw'` deliberately: its image pipeline does not
 understand multi-band TIFF and would flatten the extra bands away.
 
-### Stub mode
+### Classifier-only mode
 
-With no `.onnx` files present and `ALLOW_STUB_INFERENCE=true`, both models fall
-back to **deterministic hash-derived output** so the whole flow is testable
-before weights exist. It is the same answer for the same file every time, and the
-UI labels it clearly as stub output — it is not a measurement. Set
-`ALLOW_STUB_INFERENCE=false` once real models are in place so a missing model
-fails loudly. Check which path is live:
+The apple classifier is required for a supported RGB TIFF scan; missing or
+unloadable model errors are reported explicitly. Residue estimation remains
+disabled. Check model availability:
 
 ```bash
 curl localhost:4000/api/v1/health | jq .dependencies.models
 ```
 
-Expected model shapes are documented in `backend/models/README.md`.
+Expected model input and output are documented in `backend/models/README.md`.
 
 ### API
 

@@ -11,7 +11,6 @@ import {
   Banner,
   Button,
   Card,
-  KeyValue,
   ProgressBar,
   SectionHeader,
   SegmentedRow,
@@ -22,6 +21,7 @@ import { bandName, formatBytes, formatDuration } from '../utils/format';
 import type { RenderMode } from '../types';
 
 const MAX_BAND_INDEX = 5;
+const SHOW_RENDER_CONTROLS = false;
 
 export function ScanScreen() {
   const insets = useSafeAreaInsets();
@@ -80,7 +80,7 @@ export function ScanScreen() {
     >
       <View style={styles.header}>
         <Text style={styles.title}>GreenScan</Text>
-        <Text style={styles.subtitle}> AI Pesticide Scanner</Text>
+        <Text style={styles.subtitle}>AI pesticide detector</Text>
       </View>
 
       {showIdle ? (
@@ -94,8 +94,6 @@ export function ScanScreen() {
                 : ' '
             }
           />
-
-           
         </View>
       ) : null}
 
@@ -124,10 +122,10 @@ export function ScanScreen() {
           {/* ---------------- Work-I: on-device false-colour render ---------------- */}
           <View>
             <SectionHeader
-              title="False-colour composite"
+              title={packed?.metadata.bandCount === 3 ? 'RGB preview' : 'False-colour composite'}
               hint={
                 packed
-                  ? `${packed.metadata.width}×${packed.metadata.height} source · ${packed.metadata.bandCount} bands · decoded in ${formatDuration(packed.decodeMs)}`
+                  ? `${packed.metadata.width}×${packed.metadata.height} source · ${packed.metadata.bandCount} bands · ${packed.metadata.bandCount === 3 ? 'direct RGB' : 'false-colour remap'} · decoded in ${formatDuration(packed.decodeMs)}`
                   : 'Rendering on the GPU'
               }
             />
@@ -160,62 +158,73 @@ export function ScanScreen() {
             )}
           </View>
 
-          {textures && packed ? (
+          {SHOW_RENDER_CONTROLS && textures && packed ? (
             <Card title="Render controls">
-              <SegmentedRow<RenderMode>
-                value={renderMode}
-                onChange={setRenderMode}
-                options={[
-                  { value: 'false-color', label: 'False colour' },
-                  { value: 'ndvi', label: 'NDVI' },
-                ]}
-              />
-
-              {renderMode === 'false-color' ? (
-                <>
-                  <Stepper
-                    label="Red channel"
-                    value={mapping.red}
-                    min={0}
-                    max={Math.min(MAX_BAND_INDEX, packed.metadata.bandCount - 1)}
-                    format={bandName}
-                    onChange={(value) => setMapping({ red: value, nir: value })}
-                  />
-                  <Stepper
-                    label="Green channel"
-                    value={mapping.green}
-                    min={0}
-                    max={Math.min(MAX_BAND_INDEX, packed.metadata.bandCount - 1)}
-                    format={bandName}
-                    onChange={(value) => setMapping({ green: value })}
-                  />
-                  <Stepper
-                    label="Blue channel"
-                    value={mapping.blue}
-                    min={0}
-                    max={Math.min(MAX_BAND_INDEX, packed.metadata.bandCount - 1)}
-                    format={bandName}
-                    onChange={(value) => setMapping({ blue: value })}
-                  />
-                </>
+              {packed.metadata.bandCount === 3 ? (
+                <Text style={styles.inlineNote}>
+                  This TIFF has three channels. They are displayed directly as RGB without
+                  false-colour conversion.
+                </Text>
               ) : (
                 <>
-                  <Stepper
-                    label="NIR band"
-                    value={mapping.nir}
-                    min={0}
-                    max={Math.min(MAX_BAND_INDEX, packed.metadata.bandCount - 1)}
-                    format={bandName}
-                    onChange={(value) => setMapping({ nir: value })}
+                  <SegmentedRow<RenderMode>
+                    value={renderMode}
+                    onChange={setRenderMode}
+                    options={[
+                      { value: 'false-color', label: 'False colour' },
+                      { value: 'ndvi', label: 'NDVI' },
+                    ]}
                   />
-                  <Stepper
-                    label="Red band"
-                    value={mapping.redBand}
-                    min={0}
-                    max={Math.min(MAX_BAND_INDEX, packed.metadata.bandCount - 1)}
-                    format={bandName}
-                    onChange={(value) => setMapping({ redBand: value })}
-                  />
+
+                  {renderMode === 'false-color' ? (
+                    <>
+                      <Stepper
+                        label="Red channel"
+                        value={mapping.red}
+                        min={0}
+                        max={Math.min(MAX_BAND_INDEX, packed.metadata.bandCount - 1)}
+                        format={bandName}
+                        onChange={(value) => setMapping({ red: value, nir: value })}
+                      />
+                      <Stepper
+                        label="Green channel"
+                        value={mapping.green}
+                        min={0}
+                        max={Math.min(MAX_BAND_INDEX, packed.metadata.bandCount - 1)}
+                        format={bandName}
+                        onChange={(value) => setMapping({ green: value })}
+                      />
+                      <Stepper
+                        label="Blue channel"
+                        value={mapping.blue}
+                        min={0}
+                        max={Math.min(MAX_BAND_INDEX, packed.metadata.bandCount - 1)}
+                        format={bandName}
+                        onChange={(value) => setMapping({ blue: value })}
+                      />
+                    </>
+                  ) : null}
+
+                  {renderMode === 'ndvi' ? (
+                    <>
+                      <Stepper
+                        label="NIR band"
+                        value={mapping.nir}
+                        min={0}
+                        max={Math.min(MAX_BAND_INDEX, packed.metadata.bandCount - 1)}
+                        format={bandName}
+                        onChange={(value) => setMapping({ nir: value })}
+                      />
+                      <Stepper
+                        label="Red band"
+                        value={mapping.redBand}
+                        min={0}
+                        max={Math.min(MAX_BAND_INDEX, packed.metadata.bandCount - 1)}
+                        format={bandName}
+                        onChange={(value) => setMapping({ redBand: value })}
+                      />
+                    </>
+                  ) : null}
                 </>
               )}
 

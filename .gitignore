@@ -16,6 +16,8 @@
 /dataset/test_download/
 /dataset/kaggle.json
 **/*.onnx
+!/model-appleScanner/*.onnx
+!/app/backend/models/*.onnx
 **/tmp/
 
 # React Native / Android

@@ -10,16 +10,15 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import theme, { colors, radius, spacing, typography } from '../theme';
+import { colors, radius, spacing, typography } from '../theme';
 import useHistoryStore from '../store/useHistoryStore';
 import { Banner, Card, EmptyState, KeyValue, SectionHeader } from '../components/ui';
-import { formatPercent, formatRelative, residueLabels } from '../utils/format';
+import { formatPercent, formatRelative } from '../utils/format';
 import type { ScanResult } from '../types';
 
 function HistoryRow({ item, onDelete }: { item: ScanResult; onDelete: (id: string) => void }) {
   const rejected = item.status === 'rejected';
-  const level = item.pesticide?.level ?? 'none';
-  const accent = rejected ? colors.warning : theme.residueColors[level];
+  const accent = rejected ? colors.warning : colors.primary;
 
   return (
     <Pressable
@@ -40,14 +39,22 @@ function HistoryRow({ item, onDelete }: { item: ScanResult; onDelete: (id: strin
 
         {rejected ? (
           <Text style={[styles.rowVerdict, { color: colors.warning }]}>
-            {item.rejectionReason === 'not_vegetable' ? 'Not a vegetable' : 'Image unclear'}
+            {item.rejectionReason === 'unsupported_format'
+              ? 'Unsupported TIFF format'
+              : item.rejectionReason === 'unclear_image'
+                ? 'Image unclear'
+                : 'Rejected'}
           </Text>
         ) : (
           <View style={styles.rowVerdictRow}>
             <Text style={[styles.rowPercent, { color: accent }]}>
-              {formatPercent(item.pesticide?.percent)}
+              {item.appleClassification?.label ?? 'Unclassified'}
             </Text>
-            <Text style={styles.rowLevel}>{residueLabels[level]}</Text>
+            {item.appleClassification ? (
+              <Text style={styles.rowLevel}>
+                {formatPercent(item.appleClassification.confidence * 100)} confidence
+              </Text>
+            ) : null}
           </View>
         )}
 
@@ -101,11 +108,10 @@ export function HistoryScreen() {
         <Card title="Summary">
           <View style={styles.statRow}>
             <Stat label="Scans" value={String(summary.total)} />
-            <Stat label="Scored" value={String(summary.scored)} />
+            <Stat label="Classified" value={String(summary.classified)} />
             <Stat label="Rejected" value={String(summary.rejected)} color={colors.warning} />
           </View>
-          <KeyValue label="Average residue" value={formatPercent(summary.averagePercent ?? undefined)} />
-          <KeyValue label="Highest residue" value={formatPercent(summary.maxPercent ?? undefined)} />
+          <KeyValue label="Result" value="Apple dataset class; no residue estimate" />
           <KeyValue label="Last scan" value={formatRelative(summary.lastScanAt)} />
         </Card>
       ) : null}

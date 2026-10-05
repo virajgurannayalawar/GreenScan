@@ -52,6 +52,7 @@ async function decodeMultispectralTiff(buffer) {
   const bandCount = image.getSamplesPerPixel();
   const bitsPerSample = image.getBitsPerSample?.() ?? 8;
   const compression = image.fileDirectory?.Compression ?? 1;
+  const photometricInterpretation = image.fileDirectory?.PhotometricInterpretation ?? null;
   const sampleFormatCode = image.fileDirectory?.SampleFormat?.[0] ?? 1;
   const sampleFormat = sampleFormatCode === 3 ? 'float' : sampleFormatCode === 2 ? 'int' : 'uint';
 
@@ -89,28 +90,66 @@ async function decodeMultispectralTiff(buffer) {
     bitsPerSample: Array.isArray(bitsPerSample) ? bitsPerSample[0] : bitsPerSample,
     sampleFormat,
     compression,
+    photometricInterpretation,
     bands,
     maxValue,
   };
 }
 
+function resizeWeights(sourceSize, targetSize) {
+  const scale = sourceSize / targetSize;
+  const filterScale = Math.max(scale, 1);
+  const weights = new Array(targetSize);
+
+  for (let target = 0; target < targetSize; target += 1) {
+    const center = (target + 0.5) * scale;
+    const start = Math.max(0, Math.ceil(center - filterScale - 0.5));
+    const end = Math.min(sourceSize, Math.floor(center + filterScale - 0.5) + 1);
+    const samples = [];
+    let total = 0;
+
+    for (let source = start; source < end; source += 1) {
+      const distance = Math.abs(source + 0.5 - center) / filterScale;
+      const weight = Math.max(0, 1 - distance);
+      if (weight > 0) {
+        samples.push([source, weight]);
+        total += weight;
+      }
+    }
+
+    weights[target] = samples.map(([source, weight]) => [source, weight / total]);
+  }
+
+  return weights;
+}
+
 /**
- * Nearest-neighbour resize of a single plane. Nearest-neighbour is deliberate:
- * it is allocation-free per pixel and preserves raw radiometric values, which
- * matters more than smoothness for band-ratio features.
+ * Pillow's default bilinear Resize applies a triangular filter widened for
+ * downsampling. Keep that behavior for the RGB classifier's training match.
  */
-function resizePlane(plane, srcWidth, srcHeight, dstWidth, dstHeight) {
+function resizePlaneBilinear(plane, srcWidth, srcHeight, dstWidth, dstHeight) {
+  const xWeights = resizeWeights(srcWidth, dstWidth);
+  const yWeights = resizeWeights(srcHeight, dstHeight);
+  const horizontal = new Float32Array(dstWidth * srcHeight);
   const out = new Float32Array(dstWidth * dstHeight);
-  const xRatio = srcWidth / dstWidth;
-  const yRatio = srcHeight / dstHeight;
+
+  for (let y = 0; y < srcHeight; y += 1) {
+    for (let x = 0; x < dstWidth; x += 1) {
+      let value = 0;
+      for (const [sourceX, weight] of xWeights[x]) {
+        value += plane[y * srcWidth + sourceX] * weight;
+      }
+      horizontal[y * dstWidth + x] = value;
+    }
+  }
 
   for (let y = 0; y < dstHeight; y += 1) {
-    const srcY = Math.min(srcHeight - 1, Math.floor(y * yRatio));
-    const srcRow = srcY * srcWidth;
-    const dstRow = y * dstWidth;
     for (let x = 0; x < dstWidth; x += 1) {
-      const srcX = Math.min(srcWidth - 1, Math.floor(x * xRatio));
-      out[dstRow + x] = plane[srcRow + srcX];
+      let value = 0;
+      for (const [sourceY, weight] of yWeights[y]) {
+        value += horizontal[sourceY * dstWidth + x] * weight;
+      }
+      out[y * dstWidth + x] = value;
     }
   }
 
@@ -118,31 +157,38 @@ function resizePlane(plane, srcWidth, srcHeight, dstWidth, dstHeight) {
 }
 
 /**
- * Build the pseudo-RGB preview the vegetable gate consumes.
- * Band indices are 0-based into `raster.bands`.
+ * Match the apple classifier's torchvision RGB TIFF preprocessing. Return
+ * null for rasters outside the model's 8-bit, three-channel RGB training input.
  */
-function buildPreviewTensorData(raster, mapping) {
+function buildAppleClassifierTensorData(raster) {
   const { bands, width, height } = raster;
-  const pick = (index, fallback) => bands[index] ?? bands[fallback] ?? bands[0];
+  if (
+    bands.length !== 3 ||
+    raster.photometricInterpretation !== 2 ||
+    raster.bitsPerSample !== 8 ||
+    raster.sampleFormat !== 'uint'
+  ) {
+    return null;
+  }
 
-  const planes = [
-    pick(mapping.red, 0),
-    pick(mapping.green, Math.min(1, bands.length - 1)),
-    pick(mapping.blue, Math.min(2, bands.length - 1)),
-  ].map((plane) => resizePlane(plane, width, height, MODEL_INPUT_SIZE, MODEL_INPUT_SIZE));
-
-  // NCHW float32, ImageNet-normalised — the convention almost every
-  // torchvision/timm export expects.
-  const mean = [0.485, 0.456, 0.406];
-  const std = [0.229, 0.224, 0.225];
   const pixels = MODEL_INPUT_SIZE * MODEL_INPUT_SIZE;
+  const means = [0.485, 0.456, 0.406];
+  const stds = [0.229, 0.224, 0.225];
   const data = new Float32Array(3 * pixels);
 
-  for (let c = 0; c < 3; c += 1) {
-    const plane = planes[c];
-    const offset = c * pixels;
+  for (let channel = 0; channel < 3; channel += 1) {
+    const resized = resizePlaneBilinear(
+      bands[channel],
+      width,
+      height,
+      MODEL_INPUT_SIZE,
+      MODEL_INPUT_SIZE,
+    );
+    const offset = channel * pixels;
+
     for (let i = 0; i < pixels; i += 1) {
-      data[offset + i] = (plane[i] - mean[c]) / std[c];
+      const pixel = Math.round(Math.min(1, Math.max(0, resized[i])) * 255) / 255;
+      data[offset + i] = (pixel - means[channel]) / stds[channel];
     }
   }
 
@@ -150,26 +196,8 @@ function buildPreviewTensorData(raster, mapping) {
 }
 
 /**
- * Build the full multi-band tensor the residue regressor consumes.
- * Every available band is forwarded so the model can use NDVI-style ratios.
- */
-function buildResidueTensorData(raster) {
-  const { bands, width, height } = raster;
-  const channels = bands.length;
-  const pixels = MODEL_INPUT_SIZE * MODEL_INPUT_SIZE;
-  const data = new Float32Array(channels * pixels);
-
-  for (let c = 0; c < channels; c += 1) {
-    const resized = resizePlane(bands[c], width, height, MODEL_INPUT_SIZE, MODEL_INPUT_SIZE);
-    data.set(resized, c * pixels);
-  }
-
-  return { data, dims: [1, channels, MODEL_INPUT_SIZE, MODEL_INPUT_SIZE] };
-}
-
-/**
  * Variance of the Laplacian — the standard cheap focus metric. Computed on the
- * NIR-ish band because it carries the most leaf texture.
+ * first RGB channel.
  *
  * Also reports the share of blown-out pixels, which catches the "photographed
  * into the sun" case that a sharpness number alone would pass.
@@ -213,8 +241,6 @@ function assessQuality(raster, bandIndex = 0) {
 module.exports = {
   MODEL_INPUT_SIZE,
   decodeMultispectralTiff,
-  buildPreviewTensorData,
-  buildResidueTensorData,
+  buildAppleClassifierTensorData,
   assessQuality,
-  resizePlane,
 };

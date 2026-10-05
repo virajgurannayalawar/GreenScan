@@ -2,7 +2,7 @@
   "name": "pestiscan",
   "version": "0.1.0",
   "private": true,
-  "description": "PestiScan — multispectral pesticide-residue scanner.",
+  "description": "PestiScan — multispectral TIFF preview with an apple dataset classifier.",
   "engines": {
     "node": ">=20.0.0"
   },

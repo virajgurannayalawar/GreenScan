@@ -4,7 +4,7 @@ const Scan = require('../models/Scan');
 
 /**
  * GET /api/v1/history
- * Query: deviceId, status, limit, cursor (ISO date), level
+ * Query: deviceId, status, limit, cursor (ISO date)
  *
  * Cursor pagination on createdAt rather than skip/limit — history grows
  * monotonically and new scans land at the head, so offsets would drift.
@@ -16,7 +16,6 @@ async function listHistory(req, res) {
   const filter = {};
   if (deviceId) filter.deviceId = deviceId;
   if (req.query.status) filter.status = req.query.status;
-  if (req.query.level) filter['pesticide.level'] = req.query.level;
   if (req.query.cursor) {
     const cursorDate = new Date(req.query.cursor);
     if (!Number.isNaN(cursorDate.valueOf())) {
@@ -48,29 +47,26 @@ async function historySummary(req, res) {
       $group: {
         _id: null,
         total: { $sum: 1 },
-        scored: { $sum: { $cond: [{ $eq: ['$status', 'ok'] }, 1, 0] } },
+        classified: {
+          $sum: {
+            $cond: [
+              { $and: [{ $eq: ['$status', 'ok'] }, { $ne: ['$appleClassification', null] }] },
+              1,
+              0,
+            ],
+          },
+        },
         rejected: { $sum: { $cond: [{ $eq: ['$status', 'rejected'] }, 1, 0] } },
-        averagePercent: { $avg: '$pesticide.percent' },
-        maxPercent: { $max: '$pesticide.percent' },
         lastScanAt: { $max: '$createdAt' },
       },
     },
   ]);
 
-  const byLevel = await Scan.aggregate([
-    { $match: { ...match, status: 'ok' } },
-    { $group: { _id: '$pesticide.level', count: { $sum: 1 } } },
-  ]);
-
   res.json({
     total: aggregate?.total ?? 0,
-    scored: aggregate?.scored ?? 0,
+    classified: aggregate?.classified ?? 0,
     rejected: aggregate?.rejected ?? 0,
-    averagePercent:
-      aggregate?.averagePercent == null ? null : Number(aggregate.averagePercent.toFixed(2)),
-    maxPercent: aggregate?.maxPercent ?? null,
     lastScanAt: aggregate?.lastScanAt ?? null,
-    byLevel: byLevel.reduce((acc, row) => ({ ...acc, [row._id ?? 'unknown']: row.count }), {}),
   });
 }
 

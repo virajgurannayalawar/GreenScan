@@ -251,6 +251,7 @@ export async function readTiffLayout(reader: NativeFileReader): Promise<TiffLayo
 
   const width = requireTag(entries, TAG.IMAGE_WIDTH, 'ImageWidth').values[0];
   const height = requireTag(entries, TAG.IMAGE_LENGTH, 'ImageLength').values[0];
+  // TIFF IFD SamplesPerPixel (tag 277) drives RGB passthrough vs. band remapping.
   const samplesPerPixel = entries.get(TAG.SAMPLES_PER_PIXEL)?.values[0] ?? 1;
   const bitsPerSampleValues = entries.get(TAG.BITS_PER_SAMPLE)?.values ?? [8];
   const bitsPerSample = bitsPerSampleValues[0];

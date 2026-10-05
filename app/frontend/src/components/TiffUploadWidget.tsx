@@ -70,17 +70,7 @@ export function TiffUploadWidget({
         </Text>
       </Pressable>
 
-      <View style={styles.requirements}>
-        <Text style={styles.requirementsTitle}>What the on-device preview accepts</Text>
-        <KeyValue label="Container" value=".tif / .tiff (baseline, 32-bit offsets)" />
-        <KeyValue label="Compression" value="Uncompressed" />
-        <KeyValue label="Sample depth" value="8-bit, 16-bit, or 32-bit float" />
-        <KeyValue label="Bands" value="Up to 6 (chunky or planar)" />
-        <Text style={styles.requirementsNote}>
-          Compressed or BigTIFF files are still uploaded and scored on the server — only the live
-          GPU preview needs the uncompressed form.
-        </Text>
-      </View>
+      
 
       {report?.inspected.length ? (
         <View style={styles.devices}>

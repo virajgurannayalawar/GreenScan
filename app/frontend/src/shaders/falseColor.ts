@@ -149,6 +149,19 @@ export interface FalseColorUniformOptions {
   gamma: number;
 }
 
+export function resolveDisplayMapping(mapping: BandMapping, bandCount: number): BandMapping {
+  if (bandCount !== 3) return mapping;
+
+  return {
+    ...mapping,
+    red: 0,
+    green: 1,
+    blue: 2,
+    nir: 0,
+    redBand: 2,
+  };
+}
+
 /** Build the uniform payload for `<Shader uniforms={...}>`. */
 export function buildFalseColorUniforms(options: FalseColorUniformOptions): Record<string, number[] | number> {
   const { mapping, stretches, bandCount, hasTextureB, mode, gain, gamma } = options;

@@ -37,6 +37,14 @@ const ClassificationSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const AppleClassificationSchema = new mongoose.Schema(
+  {
+    label: { type: String, enum: ['Fresh', 'High', 'Low'] },
+    confidence: { type: Number },
+  },
+  { _id: false },
+);
+
 const QualitySchema = new mongoose.Schema(
   {
     sharpness: Number,
@@ -70,7 +78,7 @@ const ScanSchema = new mongoose.Schema(
     },
     rejectionReason: {
       type: String,
-      enum: ['not_vegetable', 'unclear_image', null],
+      enum: ['not_vegetable', 'unclear_image', 'unsupported_format', null],
       default: null,
     },
     message: { type: String },
@@ -82,15 +90,17 @@ const ScanSchema = new mongoose.Schema(
     raster: RasterSchema,
     asset: AssetSchema,
     classification: ClassificationSchema,
+    appleClassification: AppleClassificationSchema,
     quality: QualitySchema,
     pesticide: PesticideSchema,
 
     inference: {
-      engine: { type: String, enum: ['onnxruntime-node', 'stub'] },
+      engine: { type: String, enum: ['onnxruntime-node', 'stub', 'n/a'] },
       durationMs: Number,
       modelVersions: {
         gate: String,
         residue: String,
+        appleClassifier: String,
       },
     },
 
@@ -119,9 +129,8 @@ ScanSchema.methods.toClientJSON = function toClientJSON() {
           skipped: this.asset.skipped,
         }
       : undefined,
-    classification: this.classification,
+    appleClassification: this.appleClassification,
     quality: this.quality,
-    pesticide: this.pesticide,
     inference: this.inference,
     capturedAt: this.capturedAt,
     createdAt: this.createdAt,

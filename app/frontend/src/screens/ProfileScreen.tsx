@@ -65,7 +65,7 @@ export function ProfileScreen() {
     >
       <View style={styles.header}>
         <Text style={styles.title}>Profile</Text>
-        <Text style={styles.subtitle}>Operator details and sensor configuration</Text>
+        <Text style={styles.subtitle}>      </Text>
       </View>
 
       {error ? (
@@ -77,15 +77,10 @@ export function ProfileScreen() {
         />
       ) : null}
 
-      <Card title="Operator">
-        <Field label="Name" value={displayName} onChangeText={(v) => { setDisplayName(v); setDirty(true); }} placeholder="Field Operator" />
-        <Field
-          label="Organisation"
-          value={organisation}
-          onChangeText={(v) => { setOrganisation(v); setDirty(true); }}
-          placeholder="e.g. State Agriculture Lab"
-        />
-        <Field label="Region" value={region} onChangeText={(v) => { setRegion(v); setDirty(true); }} placeholder="e.g. Pune District" />
+      <Card title="user">
+        <Field label="Name" value={displayName} onChangeText={(v) => { setDisplayName(v); setDirty(true); }} placeholder="enter user name" />
+        
+        <Field label="phone" value={region} onChangeText={(v) => { setRegion(v); setDirty(true); }} placeholder=" enter phone number" />
         <Button
           label={dirty ? 'Save changes' : 'Saved'}
           onPress={onSave}
@@ -99,100 +94,12 @@ export function ProfileScreen() {
         Band mapping lives here rather than being hard-coded because the index
         of each wavelength is sensor-specific. A MicaSense RedEdge writes
         Blue,Green,Red,NIR,RedEdge; another vendor may write them in any order.
-        Set it once and both the GPU preview and the server-side preview tensor
-        follow it.
+        This setting controls the on-device false-colour preview only.
       */}
-      <Card
-        title="Band mapping"
-        subtitle="Which raw band drives each screen channel in the false-colour composite"
-      >
-        <Stepper
-          label="Red ← "
-          value={mapping.red}
-          min={0}
-          max={MAX_BAND_INDEX}
-          format={bandName}
-          onChange={(value) => setBandMapping({ red: value })}
-        />
-        <Stepper
-          label="Green ← "
-          value={mapping.green}
-          min={0}
-          max={MAX_BAND_INDEX}
-          format={bandName}
-          onChange={(value) => setBandMapping({ green: value })}
-        />
-        <Stepper
-          label="Blue ← "
-          value={mapping.blue}
-          min={0}
-          max={MAX_BAND_INDEX}
-          format={bandName}
-          onChange={(value) => setBandMapping({ blue: value })}
-        />
-        <Text style={styles.note}>
-          Default assumes a 5-band layout: Blue, Green, Red, NIR, Red Edge — giving the spec's
-          NIR → red, Red Edge → green, Green → blue composite.
-        </Text>
-      </Card>
+       
 
-      <Card title="Activity">
-        <KeyValue label="Total scans" value={String(profile?.stats.totalScans ?? 0)} />
-        <KeyValue
-          label="Rejected"
-          value={String(profile?.stats.rejectedScans ?? 0)}
-          valueColor={profile?.stats.rejectedScans ? colors.warning : undefined}
-        />
-        <KeyValue label="Last scan" value={formatRelative(profile?.stats.lastScanAt)} />
-        <KeyValue
-          label="Rejection rate"
-          value={
-            profile?.stats.totalScans
-              ? formatPercent((profile.stats.rejectedScans / profile.stats.totalScans) * 100)
-              : '—'
-          }
-        />
-      </Card>
-
-      <View>
-        <SectionHeader title="Diagnostics" />
-        <Card title="Backend">
-          <KeyValue label="API endpoint" value={config.apiBaseUrl} mono />
-          <KeyValue
-            label="Status"
-            value={
-              backendStatus === 'online'
-                ? 'Online'
-                : backendStatus === 'offline'
-                  ? 'Unreachable'
-                  : 'Checking…'
-            }
-            valueColor={
-              backendStatus === 'online'
-                ? colors.primary
-                : backendStatus === 'offline'
-                  ? colors.danger
-                  : undefined
-            }
-          />
-          {models ? (
-            <>
-              <KeyValue label="Vegetable gate" value={models.gate} mono />
-              <KeyValue label="Residue model" value={models.residue} mono />
-            </>
-          ) : null}
-          <KeyValue label="Device id" value={deviceId ?? '—'} mono />
-          <Button label="Re-check" variant="ghost" onPress={checkBackend} style={styles.saveButton} />
-
-          {models && (models.gate === 'stub' || models.residue === 'stub') ? (
-            <Banner
-              tone="info"
-              title="Stub models in use"
-              message="Drop the .onnx files into backend/models and restart the API for real scores."
-            />
-          ) : null}
-        </Card>
-      </View>
+      
+       
     </ScrollView>
   );
 }
