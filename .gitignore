@@ -1,5 +1,70 @@
-data1/
-data2/
-data3/
-test_download/
-kaggle.json
+# macOS
+.DS_Store
+
+# Environment and local dependencies
+**/.env
+**/node_modules/
+**/.venv/
+
+# Dataset and downloaded artifacts
+/data1/
+/data2/
+/data3/
+/dataset/data1/
+/dataset/data2/
+/dataset/data3/
+/dataset/test_download/
+/dataset/kaggle.json
+**/*.onnx
+**/tmp/
+
+# React Native / Android
+**/build/
+**/.gradle/
+**/.idea/
+**/.cxx/
+**/local.properties
+**/*.iml
+**/*.hprof
+**/*.keystore
+!**/debug.keystore
+**/.metro-health-check*
+**/*.jsbundle
+
+# iOS / Xcode
+**/xcuserdata/
+**/DerivedData/
+**/*.pbxuser
+!**/default.pbxuser
+**/*.mode1v3
+!**/default.mode1v3
+**/*.mode2v3
+**/*.perspectivev3
+**/*.xccheckout
+**/*.moved-aside
+**/*.hmap
+**/*.ipa
+**/*.xcuserstate
+**/.xcode.env.local
+**/Pods/
+**/vendor/bundle/
+
+# Fastlane artifacts
+**/fastlane/report.xml
+**/fastlane/Preview.html
+**/fastlane/screenshots/
+**/fastlane/test_output/
+
+# Logs and test output
+**/npm-debug.log
+**/yarn-error.log
+**/*.log
+**/coverage/
+
+# Yarn local files (keep checked-in Yarn tooling)
+**/.yarn/*
+!**/.yarn/patches
+!**/.yarn/plugins
+!**/.yarn/releases
+!**/.yarn/sdks
+!**/.yarn/versions
