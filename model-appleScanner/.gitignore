@@ -1,3 +1,7 @@
 *.pth
 *.pt
 data2/
+*.onnx
+fruits/
+imnet/
+gate2/
