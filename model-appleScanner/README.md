@@ -21,3 +21,5 @@ python export_onnx.py
 The exporter loads the state dict in weights-only mode, validates the ONNX
 graph, and compares ONNX Runtime logits against PyTorch before reporting
 success.
+
+Apple gate (.onnx): https://drive.google.com/file/d/1kAEfIP8cfLT3cZa0yX2wxRGm29kVL_L9/view?usp=drivesdk
