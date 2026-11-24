@@ -6,6 +6,7 @@ import {
   Text,
   View,
   type StyleProp,
+  type TextStyle,
   type ViewStyle,
 } from 'react-native';
 import theme, { colors, radius, spacing, typography } from '../theme';
@@ -239,11 +240,13 @@ export function LevelBadge({ level }: { level: ResidueLevel }) {
 export function Banner({
   tone = 'info',
   title,
+  titleStyle,
   message,
   action,
 }: {
   tone?: 'info' | 'warning' | 'danger' | 'success';
   title: string;
+  titleStyle?: StyleProp<TextStyle>;
   message?: string;
   action?: React.ReactNode;
 }) {
@@ -258,7 +261,7 @@ export function Banner({
 
   return (
     <View style={[styles.banner, { borderColor: `${toneColor}66`, backgroundColor: `${toneColor}14` }]}>
-      <Text style={[styles.bannerTitle, { color: toneColor }]}>{title}</Text>
+      <Text style={[styles.bannerTitle, { color: toneColor }, titleStyle]}>{title}</Text>
       {message ? <Text style={styles.bannerMessage}>{message}</Text> : null}
       {action ? <View style={styles.bannerAction}>{action}</View> : null}
     </View>

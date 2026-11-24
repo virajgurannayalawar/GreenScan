@@ -5,7 +5,7 @@ import { PickerCancelled, pickTiffFile } from '../services/documentPicker';
 import { decodeTiffToTextures, TiffDecodeError } from '../services/tiffDecoder';
 import { createBandTextures, type BandTextures } from '../services/skiaTexture';
 import { newClientScanId } from '../services/deviceIdentity';
-import { uploadScan } from '../services/api';
+import { ApiError, uploadScan } from '../services/api';
 import type {
   BandMapping,
   CameraProbeReport,
@@ -64,6 +64,9 @@ const initialViewerState = {
 function toScanError(stage: ScanError['stage'], error: unknown): ScanError {
   if (error instanceof TiffDecodeError) {
     return { stage, message: error.message, detail: error.code };
+  }
+  if (error instanceof ApiError) {
+    return { stage, message: error.message, code: error.code };
   }
   if (error instanceof Error) {
     return { stage, message: error.message, detail: error.name };

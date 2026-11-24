@@ -36,12 +36,18 @@ export function AnalysisResultCard({
   }
 
   if (error && !result) {
+    const errorTitle =
+      error.code === 'not_apple' ? 'Image is not an apple' : 'Could not reach the analysis service';
+
     return (
       <Card title="Classification unavailable" accent={colors.danger}>
-        <Banner tone="danger" title="Could not reach the analysis service" message={error.message} />
-        <Text style={styles.waitNote}>
-          The preview above was produced entirely on-device, so it is unaffected.
-        </Text>
+        <Banner
+          tone="danger"
+          title={errorTitle}
+          titleStyle={{ textAlign: 'center', fontSize: 26, width: '100%' }}
+          message={error.message}
+        />
+         
         <Button label="Retry classification" variant="secondary" onPress={onRetry} />
       </Card>
     );
@@ -57,13 +63,13 @@ export function AnalysisResultCard({
       <Card title={title} accent={colors.warning}>
         <Banner tone="warning" title={title} message={result.message} />
         {result.quality ? (
-          <>
+          <View style={styles.qualityContainer}>
             <KeyValue label="Sharpness" value={result.quality.sharpness.toFixed(1)} />
             <KeyValue
               label="Blown-out pixels"
               value={formatPercent(result.quality.saturatedRatio * 100)}
             />
-          </>
+          </View>
         ) : null}
         <Button label="Scan something else" variant="secondary" onPress={onRetry} />
       </Card>
@@ -75,10 +81,7 @@ export function AnalysisResultCard({
       {result.appleClassification ? (
         <Banner
           tone="info"
-          title={`${result.appleClassification.label} · ${formatPercent(
-            result.appleClassification.confidence * 100,
-          )} confidence`}
-         
+          title={`${result.appleClassification.label} pesticide is used on this apple`}
         />
       ) : (
         <Banner
@@ -120,9 +123,33 @@ export function AnalysisResultCard({
 }
 
 const styles = StyleSheet.create({
-  message: { ...typography.body, color: colors.textMuted, lineHeight: 20 },
-  details: { marginTop: spacing.sm, gap: 2 },
-  waitNote: { ...typography.caption, color: colors.textFaint, lineHeight: 17 },
+  message: {
+    ...typography.body,
+    fontSize: typography.body.fontSize ? typography.body.fontSize + 4 : 18,
+    fontWeight: '500',
+    color: colors.textMuted,
+    lineHeight: 28,
+    marginBottom: spacing.md,
+  },
+  details: {
+    marginTop: spacing.lg,
+    gap: 8,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border || '#e1e4e8',
+  },
+  waitNote: {
+    ...typography.caption,
+    fontSize: typography.caption.fontSize ? typography.caption.fontSize + 2 : 14,
+    color: colors.textFaint,
+    lineHeight: 22,
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  qualityContainer: {
+    marginVertical: spacing.lg,
+    gap: 6,
+  },
 });
 
 export default AnalysisResultCard;

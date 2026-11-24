@@ -260,7 +260,7 @@ export function MultispectralViewer({
         )}
       </View>
 
-      <Text style={styles.hint}>Drag to pan · pinch to zoom · double-tap to reset</Text>
+       
     </View>
   );
 }

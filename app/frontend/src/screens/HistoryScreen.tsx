@@ -13,7 +13,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { colors, radius, spacing, typography } from '../theme';
 import useHistoryStore from '../store/useHistoryStore';
 import { Banner, Card, EmptyState, KeyValue, SectionHeader } from '../components/ui';
-import { formatPercent, formatRelative } from '../utils/format';
+import { formatRelative } from '../utils/format';
 import type { ScanResult } from '../types';
 
 function HistoryRow({ item, onDelete }: { item: ScanResult; onDelete: (id: string) => void }) {
@@ -50,11 +50,6 @@ function HistoryRow({ item, onDelete }: { item: ScanResult; onDelete: (id: strin
             <Text style={[styles.rowPercent, { color: accent }]}>
               {item.appleClassification?.label ?? 'Unclassified'}
             </Text>
-            {item.appleClassification ? (
-              <Text style={styles.rowLevel}>
-                {formatPercent(item.appleClassification.confidence * 100)} confidence
-              </Text>
-            ) : null}
           </View>
         )}
 
@@ -111,7 +106,7 @@ export function HistoryScreen() {
             <Stat label="Classified" value={String(summary.classified)} />
             <Stat label="Rejected" value={String(summary.rejected)} color={colors.warning} />
           </View>
-          <KeyValue label="Result" value="Apple dataset class; no residue estimate" />
+           
           <KeyValue label="Last scan" value={formatRelative(summary.lastScanAt)} />
         </Card>
       ) : null}
@@ -205,7 +200,6 @@ const styles = StyleSheet.create({
   rowTime: { ...typography.caption, color: colors.textFaint },
   rowVerdictRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
   rowPercent: { fontSize: 22, fontWeight: '800' },
-  rowLevel: { ...typography.caption, color: colors.textMuted },
   rowVerdict: { ...typography.subtitle },
   rowMeta: { ...typography.caption, color: colors.textFaint },
 

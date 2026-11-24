@@ -121,14 +121,7 @@ export function ScanScreen() {
 
           {/* ---------------- Work-I: on-device false-colour render ---------------- */}
           <View>
-            <SectionHeader
-              title={packed?.metadata.bandCount === 3 ? 'RGB preview' : 'False-colour composite'}
-              hint={
-                packed
-                  ? `${packed.metadata.width}×${packed.metadata.height} source · ${packed.metadata.bandCount} bands · ${packed.metadata.bandCount === 3 ? 'direct RGB' : 'false-colour remap'} · decoded in ${formatDuration(packed.decodeMs)}`
-                  : 'Rendering on the GPU'
-              }
-            />
+            
 
             {textures && packed ? (
               <MultispectralViewer
@@ -147,7 +140,7 @@ export function ScanScreen() {
                 message={decodeError.message}
                 action={
                   <Text style={styles.inlineNote}>
-                    Server-side analysis is unaffected — the result below still applies to this file.
+                   
                   </Text>
                 }
               />
@@ -251,7 +244,7 @@ export function ScanScreen() {
 
           {/* ---------------- Work-II: backend verdict ---------------- */}
           <View>
-            <SectionHeader title="Analysis" hint="Cloudinary archive · ONNX inference" />
+            <SectionHeader title="Analysis"  />
             <AnalysisResultCard
               result={result}
               uploading={uploading}

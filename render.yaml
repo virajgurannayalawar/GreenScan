@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: greenscan-api
+    runtime: node
+    rootDir: app/backend
+    buildCommand: >-
+      npm ci &&
+      mkdir -p models &&
+      curl --fail --location --retry 3 --show-error --output
+      models/appleScanner_resnet18.onnx
+      "https://huggingface.co/VirajGuranna/applePestiScanner/resolve/main/appleScanner_resnet18.onnx?download=true" &&
+      curl --fail --location --retry 3 --show-error --output
+      models/appleGate2_resnet18.onnx
+      "https://huggingface.co/VirajGuranna/applePestiScanner/resolve/main/appleGate2_resnet18.onnx?download=true"
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: pestiscan
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: ONNX_APPLE_CLASSIFIER_MODEL_PATH
+        value: models/appleScanner_resnet18.onnx
+      - key: ONNX_APPLE_GATE_MODEL_PATH
+        value: models/appleGate2_resnet18.onnx
+      - key: ONNX_INTRA_OP_THREADS
+        value: "2"
+      - key: CORS_ORIGIN
+        value: "*"

@@ -22,6 +22,7 @@ const schema = z.object({
   CLOUDINARY_FOLDER: z.string().default('pestiscan/scans'),
 
   ONNX_APPLE_CLASSIFIER_MODEL_PATH: z.string().default('models/appleScanner_resnet18.onnx'),
+  ONNX_APPLE_GATE_MODEL_PATH: z.string().default('models/appleGate2_resnet18.onnx'),
   ONNX_INTRA_OP_THREADS: z.coerce.number().int().positive().default(2),
 
   SHARPNESS_THRESHOLD: z.coerce.number().min(0).default(35),
@@ -46,6 +47,7 @@ const env = {
   packageRoot: PACKAGE_ROOT,
   corsOrigins: raw.CORS_ORIGIN === '*' ? '*' : raw.CORS_ORIGIN.split(',').map((s) => s.trim()),
   appleClassifierModelPath: path.resolve(PACKAGE_ROOT, raw.ONNX_APPLE_CLASSIFIER_MODEL_PATH),
+  appleGateModelPath: path.resolve(PACKAGE_ROOT, raw.ONNX_APPLE_GATE_MODEL_PATH),
   cloudinaryConfigured: Boolean(
     raw.CLOUDINARY_CLOUD_NAME && raw.CLOUDINARY_API_KEY && raw.CLOUDINARY_API_SECRET,
   ),

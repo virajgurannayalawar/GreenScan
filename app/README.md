@@ -204,13 +204,17 @@ npm run pods             # iOS only
 npm run android          # or: npm run ios
 ```
 
-Point the app at your machine in `src/config/env.ts`:
+Copy `.env.example` to `.env` once, then set `PESTISCAN_API_BASE_URL` in that
+single file for the target you are running. The example defaults to the Render
+API; for local development, use one of these values:
 
-| Target | `apiBaseUrl` |
+| Target | `PESTISCAN_API_BASE_URL` |
 |---|---|
 | Android emulator | `http://10.0.2.2:4000` |
 | iOS simulator | `http://localhost:4000` |
 | Physical device | `http://<your-lan-ip>:4000` |
+
+Restart Metro after changing `.env` (`npm run start:reset`).
 
 ---
 
@@ -229,3 +233,66 @@ Stated plainly so nothing here is a surprise during testing.
 - **Authentication.** Device-id scoped, as described above.
 - **Compressed / BigTIFF on-device preview.** Server-side only, by design.
 - **Tests.** Jest is configured but no suites are written.
+
+
+
+running scripts
+
+$env:JAVA_HOME = 'D:\development\androidsdk\jbr'
+$env:ANDROID_HOME = 'D:\development\android_sdk'
+$env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
+$env:Path = "$env:JAVA_HOME\bin;$env:ANDROID_HOME\platform-tools;$env:Path"
+
+Set-Location 'D:\Programs\Documents\GreenScan\app\frontend'
+adb devices
+adb reverse tcp:8081 tcp:8081
+npm run android
+
+## Deploying the backend to Render
+
+The root `render.yaml` deploys the Node API from `app/backend`, downloads both
+ONNX models from the public `VirajGuranna/applePestiScanner` Hugging Face
+repository during the build, and runs the health check at `/api/v1/health`.
+Create a Render Blueprint from the repository. Set `MONGODB_URI` and the three
+`CLOUDINARY_*` variables as Render environment secrets; do not commit their
+values. Allow the Render service to connect to the MongoDB Atlas cluster
+through its Network Access rules.
+
+The Blueprint names the service `greenscan-api`. If Render assigns a different
+public URL, update `PESTISCAN_API_BASE_URL` in `frontend/.env` before building
+the APK. Choose a Render instance with enough memory for TIFF decoding and
+both ONNX sessions.
+
+The frontend reads all API and viewer settings from its single
+`frontend/.env` file through the Babel dotenv plugin. Copy
+`frontend/.env.example` to `frontend/.env` once, then set
+`PESTISCAN_API_BASE_URL` to the deployed Render URL. The file is ignored by Git;
+its values are inlined into the app bundle, so do not put secrets in it. Restart
+Metro or rebuild the APK after changing it.
+
+## Building a signed Android APK
+
+The release build uses an upload keystore rather than the debug key. Generate
+and back up your keystore securely; never commit it. From the repository root,
+run:
+
+```powershell
+keytool -genkeypair -v -storetype PKCS12 `
+  -keystore app/frontend/android/app/pestiscan-upload.keystore `
+  -alias pestiscan-upload -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Set `ANDROID_UPLOAD_KEYSTORE` to that file's absolute path,
+`ANDROID_UPLOAD_KEYSTORE_PASSWORD` and `ANDROID_UPLOAD_KEY_PASSWORD` to the
+passwords entered for the keystore/key, and `ANDROID_UPLOAD_KEY_ALIAS` to
+`pestiscan-upload`. Set them in the same PowerShell session before building;
+never commit the values. Then run from the repository root:
+
+```powershell
+Set-Location 'app/frontend/android'
+.\gradlew.bat assembleRelease
+```
+
+The APK is written to
+`frontend/android/app/build/outputs/apk/release/app-release.apk`. Increment
+`versionCode` in `frontend/android/app/build.gradle` before each new release.

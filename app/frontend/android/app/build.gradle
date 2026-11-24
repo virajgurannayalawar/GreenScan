@@ -72,6 +72,16 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'org.webkit:android-jsc:+'
 
+def releaseSigningValues = [
+    storeFile: System.getenv("ANDROID_UPLOAD_KEYSTORE"),
+    storePassword: System.getenv("ANDROID_UPLOAD_KEYSTORE_PASSWORD"),
+    keyAlias: System.getenv("ANDROID_UPLOAD_KEY_ALIAS"),
+    keyPassword: System.getenv("ANDROID_UPLOAD_KEY_PASSWORD")
+]
+def releaseSigningConfigured = releaseSigningValues.values().every { value ->
+    value != null && !value.trim().isEmpty()
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -92,18 +102,44 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            if (releaseSigningConfigured) {
+                storeFile file(releaseSigningValues.storeFile)
+                storePassword releaseSigningValues.storePassword
+                keyAlias releaseSigningValues.keyAlias
+                keyPassword releaseSigningValues.keyPassword
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
+    }
+}
+
+tasks.register("verifyReleaseSigning") {
+    doLast {
+        if (!releaseSigningConfigured) {
+            throw new GradleException(
+                "Set ANDROID_UPLOAD_KEYSTORE, ANDROID_UPLOAD_KEYSTORE_PASSWORD, " +
+                    "ANDROID_UPLOAD_KEY_ALIAS, and ANDROID_UPLOAD_KEY_PASSWORD to build a release."
+            )
+        }
+        if (!project.file(releaseSigningValues.storeFile).exists()) {
+            throw new GradleException("The file set by ANDROID_UPLOAD_KEYSTORE does not exist.")
+        }
+    }
+}
+
+tasks.configureEach { task ->
+    if (task.name == "preReleaseBuild") {
+        task.dependsOn("verifyReleaseSigning")
     }
 }
 

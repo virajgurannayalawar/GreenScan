@@ -177,5 +177,6 @@ export type ScanPhase =
 export interface ScanError {
   stage: 'camera' | 'picker' | 'decode' | 'upload';
   message: string;
+  code?: string;
   detail?: string;
 }

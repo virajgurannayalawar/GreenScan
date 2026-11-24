@@ -4,6 +4,7 @@ const Scan = require('../models/Scan');
 const User = require('../models/User');
 const cloudinaryService = require('../services/cloudinary.service');
 const inferenceService = require('../services/inference.service');
+const validateAppleService = require('../services/validateApple.service');
 const ApiError = require('../utils/ApiError');
 const logger = require('../utils/logger');
 
@@ -43,6 +44,8 @@ async function createScan(req, res) {
 
   const { buffer, originalname, mimetype, size } = req.file;
 
+  await validateAppleService.validateApple(buffer);
+
   const [uploadOutcome, analysisOutcome] = await Promise.allSettled([
     cloudinaryService.uploadBuffer(buffer, {
       filename: originalname,
@@ -50,17 +53,17 @@ async function createScan(req, res) {
     }),
     inferenceService.analyseTiff(buffer, { bandMapping: metadata.bandMapping }),
   ]);
-
+ 
   // A failed archive must not throw away a successful analysis — the user still
   // needs their result. It is recorded as a skipped asset instead.
   const asset =
     uploadOutcome.status === 'fulfilled'
       ? uploadOutcome.value
       : {
-          skipped: true,
-          skipReason: 'upload_failed',
-          provider: 'cloudinary',
-        };
+        skipped: true,
+        skipReason: 'upload_failed',
+        provider: 'cloudinary',
+      };
 
   if (uploadOutcome.status === 'rejected') {
     logger.error('scan.upload_failed', { message: uploadOutcome.reason?.message });
